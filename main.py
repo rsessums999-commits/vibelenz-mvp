@@ -22,7 +22,9 @@ detector = SafetyScamDetector()
 class Message(BaseModel):
     sender: str
     text: str
-    timestamp: str | None = None
+    from typing import List, Optional
+...
+timestamp: Optional[str] = None
 
 class AnalysisRequest(BaseModel):
     messages: List[Message]
