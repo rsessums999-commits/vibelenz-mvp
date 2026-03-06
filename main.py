@@ -22,7 +22,7 @@ detector = SafetyScamDetector()
 class Message(BaseModel):
     sender: str
     text: str
-    timestamp: str = None
+    timestamp: str | None = None
 
 class AnalysisRequest(BaseModel):
     messages: List[Message]
