@@ -1,12 +1,9 @@
 """VibeLenz Safety Detection API"""
-
-from datetime import datetime
-from typing import List, Optional
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-
+from typing import List
+from datetime import datetime
 from safety_detector import SafetyScamDetector
 from models import MessageEvent
 
@@ -22,36 +19,31 @@ app.add_middleware(
 
 detector = SafetyScamDetector()
 
-
 class Message(BaseModel):
     sender: str
     text: str
-    timestamp: Optional[str] = None
-
+    timestamp: str = None
 
 class AnalysisRequest(BaseModel):
     messages: List[Message]
-
 
 @app.get("/")
 def root():
     return {"service": "VibeLenz Safety API", "status": "operational"}
 
-
 @app.post("/analyze")
 def analyze_conversation(request: AnalysisRequest):
     try:
         messages = []
-
         for msg in request.messages:
             timestamp = msg.timestamp or datetime.now().isoformat()
             messages.append(MessageEvent(msg.sender, timestamp, msg.text))
-
+        
         if len(messages) < 2:
             raise HTTPException(status_code=400, detail="Need 2+ messages")
-
+        
         result = detector.analyze(messages)
-
+        
         return {
             "risk_score": result.safety_risk_score,
             "risk_category": result.risk_category.value,
@@ -61,16 +53,13 @@ def analyze_conversation(request: AnalysisRequest):
                     "type": f.type.value,
                     "severity": f.severity,
                     "evidence": f.evidence,
-                    "details": f.details,
+                    "details": f.details
                 }
                 for f in result.active_flags
             ],
             "actions": result.recommended_actions,
             "explanation": result.explanation,
-            "confidence": result.confidence,
+            "confidence": result.confidence
         }
-
-    except HTTPException:
-        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
