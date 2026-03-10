@@ -57,7 +57,14 @@ index_path = os.path.join(os.path.dirname(__file__), "index.html")
 if os.path.exists(index_path):
 with open(index_path, "r") as f:
 return HTMLResponse(content=f.read())
-return HTMLResponse(content="<html><body><h2>VibeLenz VIE API - Running</h2><p>POST /anal
+html = (
+"<html><body>"
+"<h2>VibeLenz VIE API - Running</h2>"
+"<p>POST /analyze to analyze a conversation.</p>"
+"<p><a href='/docs'>API Docs</a></p>"
+"</body></html>"
+)
+return HTMLResponse(content=html)
 @app.get("/health", response_model=HealthResponse)
 async def health():
 """Health check endpoint. Returns 200 if engine is operational."""
@@ -103,7 +110,10 @@ content={
 {
 "priority": "high",
 "title": "Analysis Unavailable - Caution Advised",
-"body": "Safety analysis could not be completed. Treat this conversat
+"body": (
+"Safety analysis could not be completed. "
+"Treat this conversation with caution."
+),
 }
 ],
 },
