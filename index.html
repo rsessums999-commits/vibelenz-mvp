@@ -1,229 +1,801 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VibeLenz - Dating Safety Detector</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #fff;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container { max-width: 800px; margin: 0 auto; }
-        h1 {
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 2.5rem;
-            background: linear-gradient(135deg, #e94560, #f39c12);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .subtitle { text-align: center; color: #aaa; margin-bottom: 30px; }
-        .card {
-            background: #0f3460;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        label { display: block; margin-bottom: 10px; font-weight: 600; color: #f39c12; }
-        textarea {
-            width: 100%;
-            min-height: 200px;
-            padding: 15px;
-            border-radius: 10px;
-            border: 2px solid #16213e;
-            background: #1a1a2e;
-            color: #fff;
-            font-size: 14px;
-            font-family: monospace;
-            resize: vertical;
-        }
-        textarea:focus { outline: none; border-color: #e94560; }
-        button {
-            width: 100%;
-            padding: 18px;
-            background: linear-gradient(135deg, #e94560, #c0392b);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        button:hover { transform: translateY(-2px); }
-        button:active { transform: translateY(0); }
-        button:disabled { background: #555; cursor: not-allowed; }
-        .results { display: none; }
-        .results.show { display: block; }
-        .risk-badge {
-            display: inline-block;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        .risk-SAFE { background: #27ae60; }
-        .risk-CAUTION { background: #f39c12; }
-        .risk-DANGER { background: #e74c3c; }
-        .risk-ABORT_IMMEDIATELY { background: #c0392b; animation: pulse 1s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-        .flag {
-            background: #16213e;
-            padding: 12px;
-            margin: 8px 0;
-            border-left: 4px solid #e94560;
-            border-radius: 5px;
-        }
-        .action {
-            background: #0f3460;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
-            border-left: 3px solid #f39c12;
-        }
-        .loading { text-align: center; padding: 20px; display: none; }
-        .spinner {
-            border: 4px solid #16213e;
-            border-top: 4px solid #e94560;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VibeLenz - Conversation Safety Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+–bg: #0a0a0f;
+–surface: #111118;
+–border: #1e1e2e;
+–border-bright: #2a2a40;
+–text: #e8e8f0;
+–text-dim: #6b6b8a;
+–text-muted: #3d3d55;
+–accent: #00e5a0;
+–accent-dim: rgba(0,229,160,0.08);
+–accent-glow: rgba(0,229,160,0.15);
+–warn: #f59e0b;
+–warn-dim: rgba(245,158,11,0.08);
+–block: #ef4444;
+–block-dim: rgba(239,68,68,0.08);
+–allow: #00e5a0;
+–mono: ‘Space Mono’, monospace;
+–sans: ‘DM Sans’, sans-serif;
+}
+
+html, body {
+height: 100%;
+background: var(–bg);
+color: var(–text);
+font-family: var(–sans);
+font-size: 15px;
+line-height: 1.6;
+-webkit-font-smoothing: antialiased;
+}
+
+/* Grid noise texture overlay */
+body::before {
+content: ‘’;
+position: fixed;
+inset: 0;
+background-image:
+repeating-linear-gradient(0deg, transparent, transparent 39px, var(–border) 39px, var(–border) 40px),
+repeating-linear-gradient(90deg, transparent, transparent 39px, var(–border) 39px, var(–border) 40px);
+opacity: 0.25;
+pointer-events: none;
+z-index: 0;
+}
+
+.container {
+position: relative;
+z-index: 1;
+max-width: 860px;
+margin: 0 auto;
+padding: 48px 24px 80px;
+}
+
+/* Header */
+header {
+margin-bottom: 48px;
+animation: fadeDown 0.5s ease both;
+}
+
+.wordmark {
+display: flex;
+align-items: baseline;
+gap: 10px;
+margin-bottom: 10px;
+}
+
+.wordmark-main {
+font-family: var(–mono);
+font-size: 22px;
+font-weight: 700;
+letter-spacing: -0.5px;
+color: var(–text);
+}
+
+.wordmark-tag {
+font-family: var(–mono);
+font-size: 11px;
+color: var(–accent);
+letter-spacing: 2px;
+text-transform: uppercase;
+border: 1px solid var(–accent);
+padding: 2px 7px;
+border-radius: 2px;
+}
+
+.tagline {
+font-size: 13px;
+color: var(–text-dim);
+font-family: var(–mono);
+letter-spacing: 0.3px;
+}
+
+/* Engine status bar */
+.status-bar {
+display: flex;
+align-items: center;
+gap: 8px;
+margin-top: 18px;
+font-family: var(–mono);
+font-size: 11px;
+color: var(–text-dim);
+}
+
+.status-dot {
+width: 7px;
+height: 7px;
+border-radius: 50%;
+background: var(–accent);
+box-shadow: 0 0 8px var(–accent);
+animation: pulse 2s ease infinite;
+}
+
+@keyframes pulse {
+0%, 100% { opacity: 1; }
+50% { opacity: 0.4; }
+}
+
+/* Input section */
+.input-section {
+margin-bottom: 24px;
+animation: fadeDown 0.5s 0.1s ease both;
+}
+
+.section-label {
+font-family: var(–mono);
+font-size: 10px;
+letter-spacing: 2px;
+text-transform: uppercase;
+color: var(–text-muted);
+margin-bottom: 10px;
+}
+
+textarea {
+width: 100%;
+min-height: 220px;
+background: var(–surface);
+border: 1px solid var(–border-bright);
+border-radius: 4px;
+color: var(–text);
+font-family: var(–mono);
+font-size: 13px;
+line-height: 1.7;
+padding: 16px;
+resize: vertical;
+outline: none;
+transition: border-color 0.2s;
+caret-color: var(–accent);
+}
+
+textarea::placeholder { color: var(–text-muted); }
+textarea:focus { border-color: var(–accent); }
+
+/* Action row */
+.action-row {
+display: flex;
+align-items: center;
+gap: 16px;
+margin-bottom: 32px;
+animation: fadeDown 0.5s 0.2s ease both;
+}
+
+.btn-analyze {
+font-family: var(–mono);
+font-size: 12px;
+font-weight: 700;
+letter-spacing: 1.5px;
+text-transform: uppercase;
+color: var(–bg);
+background: var(–accent);
+border: none;
+border-radius: 3px;
+padding: 13px 28px;
+cursor: pointer;
+transition: all 0.15s;
+white-space: nowrap;
+}
+
+.btn-analyze:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.btn-analyze:active { transform: translateY(0); }
+.btn-analyze:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.btn-clear {
+font-family: var(–mono);
+font-size: 11px;
+letter-spacing: 1px;
+text-transform: uppercase;
+color: var(–text-muted);
+background: none;
+border: 1px solid var(–border-bright);
+border-radius: 3px;
+padding: 13px 20px;
+cursor: pointer;
+transition: all 0.15s;
+}
+
+.btn-clear:hover { color: var(–text-dim); border-color: var(–text-muted); }
+
+.analyzing-text {
+font-family: var(–mono);
+font-size: 12px;
+color: var(–accent);
+display: none;
+align-items: center;
+gap: 8px;
+}
+
+.spinner {
+width: 14px;
+height: 14px;
+border: 2px solid var(–accent-dim);
+border-top-color: var(–accent);
+border-radius: 50%;
+animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Results */
+#results {
+display: none;
+animation: fadeUp 0.4s ease both;
+}
+
+@keyframes fadeUp {
+from { opacity: 0; transform: translateY(16px); }
+to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeDown {
+from { opacity: 0; transform: translateY(-8px); }
+to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Verdict banner */
+.verdict-banner {
+border-radius: 4px;
+padding: 20px 24px;
+margin-bottom: 20px;
+border: 1px solid;
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 16px;
+}
+
+.verdict-banner.BLOCK {
+background: var(–block-dim);
+border-color: var(–block);
+}
+
+.verdict-banner.WARN {
+background: var(–warn-dim);
+border-color: var(–warn);
+}
+
+.verdict-banner.ALLOW {
+background: var(–accent-dim);
+border-color: var(–accent);
+}
+
+.verdict-label {
+font-family: var(–mono);
+font-size: 20px;
+font-weight: 700;
+letter-spacing: 3px;
+}
+
+.verdict-banner.BLOCK .verdict-label { color: var(–block); }
+.verdict-banner.WARN  .verdict-label { color: var(–warn); }
+.verdict-banner.ALLOW .verdict-label { color: var(–allow); }
+
+.verdict-meta {
+display: flex;
+flex-direction: column;
+align-items: flex-end;
+gap: 4px;
+}
+
+.verdict-score {
+font-family: var(–mono);
+font-size: 26px;
+font-weight: 700;
+line-height: 1;
+}
+
+.verdict-banner.BLOCK .verdict-score { color: var(–block); }
+.verdict-banner.WARN  .verdict-score { color: var(–warn); }
+.verdict-banner.ALLOW .verdict-score { color: var(–allow); }
+
+.verdict-score-label {
+font-family: var(–mono);
+font-size: 9px;
+letter-spacing: 2px;
+text-transform: uppercase;
+color: var(–text-dim);
+}
+
+.verdict-conf {
+font-family: var(–mono);
+font-size: 11px;
+color: var(–text-dim);
+}
+
+/* Metrics row */
+.metrics-row {
+display: grid;
+grid-template-columns: repeat(4, 1fr);
+gap: 10px;
+margin-bottom: 20px;
+}
+
+.metric-card {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 4px;
+padding: 14px 16px;
+}
+
+.metric-value {
+font-family: var(–mono);
+font-size: 22px;
+font-weight: 700;
+color: var(–text);
+line-height: 1;
+margin-bottom: 4px;
+}
+
+.metric-label {
+font-family: var(–mono);
+font-size: 9px;
+letter-spacing: 1.5px;
+text-transform: uppercase;
+color: var(–text-muted);
+}
+
+/* Panels */
+.panel {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 4px;
+margin-bottom: 12px;
+overflow: hidden;
+}
+
+.panel-header {
+padding: 12px 16px;
+border-bottom: 1px solid var(–border);
+display: flex;
+align-items: center;
+justify-content: space-between;
+}
+
+.panel-title {
+font-family: var(–mono);
+font-size: 10px;
+letter-spacing: 2px;
+text-transform: uppercase;
+color: var(–text-dim);
+}
+
+.panel-count {
+font-family: var(–mono);
+font-size: 11px;
+color: var(–text-muted);
+}
+
+/* Chain items */
+.chain-item {
+padding: 14px 16px;
+border-bottom: 1px solid var(–border);
+display: flex;
+align-items: center;
+gap: 12px;
+}
+
+.chain-item:last-child { border-bottom: none; }
+
+.chain-icon {
+width: 32px;
+height: 32px;
+border-radius: 3px;
+background: var(–block-dim);
+border: 1px solid var(–block);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 14px;
+flex-shrink: 0;
+}
+
+.chain-name {
+font-size: 14px;
+font-weight: 500;
+color: var(–text);
+margin-bottom: 2px;
+}
+
+.chain-risk {
+font-family: var(–mono);
+font-size: 11px;
+color: var(–block);
+}
+
+/* Evidence items */
+.evidence-item {
+padding: 12px 16px;
+border-bottom: 1px solid var(–border);
+display: grid;
+grid-template-columns: auto 1fr auto;
+gap: 12px;
+align-items: start;
+}
+
+.evidence-item:last-child { border-bottom: none; }
+
+.tier-badge {
+font-family: var(–mono);
+font-size: 9px;
+letter-spacing: 1px;
+font-weight: 700;
+padding: 3px 7px;
+border-radius: 2px;
+white-space: nowrap;
+margin-top: 1px;
+}
+
+.tier-badge.CRITICAL {
+background: var(–block-dim);
+color: var(–block);
+border: 1px solid rgba(239,68,68,0.3);
+}
+
+.tier-badge.HIGH {
+background: var(–warn-dim);
+color: var(–warn);
+border: 1px solid rgba(245,158,11,0.3);
+}
+
+.tier-badge.MEDIUM {
+background: rgba(100,100,160,0.1);
+color: #8888bb;
+border: 1px solid rgba(100,100,160,0.25);
+}
+
+.evidence-signal {
+font-family: var(–mono);
+font-size: 12px;
+color: var(–text);
+margin-bottom: 4px;
+}
+
+.evidence-snippet {
+font-size: 12px;
+color: var(–text-dim);
+font-style: italic;
+line-height: 1.5;
+}
+
+.evidence-weight {
+font-family: var(–mono);
+font-size: 11px;
+color: var(–text-muted);
+white-space: nowrap;
+margin-top: 1px;
+}
+
+/* Recommendations */
+.rec-item {
+padding: 12px 16px;
+border-bottom: 1px solid var(–border);
+font-size: 13px;
+color: var(–text-dim);
+display: flex;
+gap: 10px;
+align-items: flex-start;
+}
+
+.rec-item:last-child { border-bottom: none; }
+
+.rec-bullet {
+color: var(–accent);
+font-family: var(–mono);
+margin-top: 1px;
+flex-shrink: 0;
+}
+
+/* Audit footer */
+.audit-footer {
+margin-top: 20px;
+padding: 12px 16px;
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 4px;
+display: flex;
+gap: 24px;
+flex-wrap: wrap;
+}
+
+.audit-field {
+font-family: var(–mono);
+font-size: 10px;
+color: var(–text-muted);
+}
+
+.audit-field span {
+color: var(–text-dim);
+margin-left: 6px;
+}
+
+/* Error state */
+.error-box {
+background: var(–block-dim);
+border: 1px solid var(–block);
+border-radius: 4px;
+padding: 16px;
+font-family: var(–mono);
+font-size: 12px;
+color: var(–block);
+}
+
+/* Footer */
+.page-footer {
+margin-top: 48px;
+padding-top: 20px;
+border-top: 1px solid var(–border);
+font-family: var(–mono);
+font-size: 10px;
+color: var(–text-muted);
+letter-spacing: 1px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+.metrics-row { grid-template-columns: repeat(2, 1fr); }
+.verdict-banner { flex-direction: column; align-items: flex-start; }
+.verdict-meta { align-items: flex-start; }
+.page-footer { flex-direction: column; gap: 8px; }
+}
+</style>
+
 </head>
 <body>
-    <div class="container">
-        <h1>🛡️ VibeLenz</h1>
-        <p class="subtitle">AI-Powered Dating Safety Detection</p>
-        
-        <div class="card">
-            <label>Paste Your Conversation:</label>
-            <textarea id="conversation" placeholder="USER: Hey! How's it going?
-PARTNER: Hi! Great to meet you
-USER: You seem nice
-PARTNER: Can you send me $100?"></textarea>
-            
-            <button id="analyzeBtn" onclick="analyzeConversation()">
-                🔍 Analyze Safety
-            </button>
-        </div>
+<div class="container">
 
-        <div id="loading" class="card loading">
-            <div class="spinner"></div>
-            <p style="margin-top: 15px;">Analyzing conversation...</p>
-        </div>
-
-        <div id="results" class="card results">
-            <h2>Analysis Results</h2>
-            <div id="resultsContent"></div>
-        </div>
+  <header>
+    <div class="wordmark">
+      <span class="wordmark-main">VibeLenz</span>
+      <span class="wordmark-tag">VIE</span>
     </div>
+    <div class="tagline">Verified Interaction Engine &mdash; Behavioral Safety Analysis</div>
+    <div class="status-bar">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Connecting to engine...</span>
+    </div>
+  </header>
 
-    <script>
-        const API_URL = 'REPLACE_WITH_YOUR_RENDER_API_URL';
+  <div class="input-section">
+    <div class="section-label">Conversation Input</div>
+    <textarea id="conversationInput" placeholder="Paste a conversation here. Use any format:&#10;&#10;Them: Hi, I think I messaged the wrong number.&#10;You: No worries.&#10;Them: I am a military engineer overseas..."></textarea>
+  </div>
 
-        async function analyzeConversation() {
-            const text = document.getElementById('conversation').value;
-            const btn = document.getElementById('analyzeBtn');
-            const loading = document.getElementById('loading');
-            const results = document.getElementById('results');
-            
-            if (!text.trim()) {
-                alert('Please paste a conversation first!');
-                return;
-            }
+  <div class="action-row">
+    <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()">Analyze</button>
+    <button class="btn-clear" onclick="clearAll()">Clear</button>
+    <div class="analyzing-text" id="analyzingText">
+      <div class="spinner"></div>
+      <span>Running VIE engine...</span>
+    </div>
+  </div>
 
-            const lines = text.split('\n').filter(l => l.trim());
-            const messages = [];
-            
-            for (const line of lines) {
-                if (line.startsWith('USER:')) {
-                    messages.push({ sender: 'USER', text: line.substring(5).trim() });
-                } else if (line.startsWith('PARTNER:')) {
-                    messages.push({ sender: 'PARTNER', text: line.substring(8).trim() });
-                }
-            }
+  <div id="results"></div>
 
-            if (messages.length < 2) {
-                alert('Need at least 2 messages (format: USER: text / PARTNER: text)');
-                return;
-            }
+  <footer class="page-footer">
+    <span>Precipice Social Intelligence LLC &copy; 2025</span>
+    <span>VibeLenz VIE v2.1 &mdash; Fail-Closed Architecture</span>
+  </footer>
 
-            btn.disabled = true;
-            loading.style.display = 'block';
-            results.classList.remove('show');
+</div>
 
-            try {
-                const response = await fetch(`${API_URL}/analyze`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ messages })
-                });
+<script>
+// ---------------------------------------------------------------------------
+// Config - auto-detects current host so works on Railway and locally
+// ---------------------------------------------------------------------------
+const API_BASE = window.location.origin;
 
-                if (!response.ok) throw new Error('Analysis failed');
-                const data = await response.json();
-                displayResults(data);
-                
-            } catch (error) {
-                alert('Error: ' + error.message);
-            } finally {
-                btn.disabled = false;
-                loading.style.display = 'none';
-            }
-        }
+// ---------------------------------------------------------------------------
+// Engine health check on load
+// ---------------------------------------------------------------------------
+async function checkHealth() {
+  try {
+    const r = await fetch(API_BASE + '/health', { method: 'GET' });
+    if (r.ok) {
+      document.getElementById('statusDot').style.background = '#00e5a0';
+      document.getElementById('statusDot').style.boxShadow = '0 0 8px #00e5a0';
+      document.getElementById('statusText').textContent = 'Engine operational';
+    } else {
+      setEngineDown();
+    }
+  } catch {
+    setEngineDown();
+  }
+}
 
-        function displayResults(data) {
-            const content = document.getElementById('resultsContent');
-            const emoji = {
-                'SAFE': '✅',
-                'CAUTION': '⚠️',
-                'DANGER': '🚨',
-                'ABORT_IMMEDIATELY': '🛑'
-            };
+function setEngineDown() {
+  document.getElementById('statusDot').style.background = '#ef4444';
+  document.getElementById('statusDot').style.boxShadow = '0 0 8px #ef4444';
+  document.getElementById('statusDot').style.animation = 'none';
+  document.getElementById('statusText').textContent = 'Engine unavailable';
+}
 
-            let html = `
-                <div class="risk-badge risk-${data.risk_category}">
-                    ${emoji[data.risk_category]} ${data.risk_category}
-                </div>
-                
-                <h3>Risk Score: ${data.risk_score.toFixed(2)}</h3>
-                <p><strong>Abort Recommended:</strong> ${data.abort_recommended ? 'YES' : 'No'}</p>
-                <p><strong>Confidence:</strong> ${(data.confidence * 100).toFixed(0)}%</p>
-                
-                <h3 style="margin-top: 20px;">🚩 Flags Detected (${data.flags.length})</h3>
-            `;
+checkHealth();
 
-            if (data.flags.length > 0) {
-                data.flags.forEach(flag => {
-                    html += `
-                        <div class="flag">
-                            <strong>${flag.type}</strong> (${flag.severity})<br>
-                            <small>${flag.evidence}</small>
-                        </div>
-                    `;
-                });
-            } else {
-                html += '<p>No red flags detected.</p>';
-            }
+// ---------------------------------------------------------------------------
+// Analysis
+// ---------------------------------------------------------------------------
+async function runAnalysis() {
+  const text = document.getElementById('conversationInput').value.trim();
+  if (!text) return;
 
-            html += '<h3 style="margin-top: 20px;">📋 Recommended Actions</h3>';
-            data.actions.forEach(action => {
-                html += `<div class="action">${action}</div>`;
-            });
+  const btn = document.getElementById('analyzeBtn');
+  const spinner = document.getElementById('analyzingText');
+  const resultsEl = document.getElementById('results');
 
-            content.innerHTML = html;
-            document.getElementById('results').classList.add('show');
-            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
-        }
-    </script>
+  btn.disabled = true;
+  spinner.style.display = 'flex';
+  resultsEl.style.display = 'none';
+  resultsEl.innerHTML = '';
+
+  try {
+    const resp = await fetch(API_BASE + '/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ conversation: text })
+    });
+
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    renderResults(data);
+
+  } catch (err) {
+    resultsEl.style.display = 'block';
+    resultsEl.innerHTML = '<div class="error-box">Engine error: ' + err.message + '<br>Check that the API is running and try again.</div>';
+  } finally {
+    btn.disabled = false;
+    spinner.style.display = 'none';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Render
+// ---------------------------------------------------------------------------
+function renderResults(d) {
+  const el = document.getElementById('results');
+  el.style.display = 'block';
+
+  const verdict = d.verdict || 'WARN';
+  const risk = typeof d.risk_score === 'number' ? d.risk_score : 0.5;
+  const conf = typeof d.confidence === 'number' ? d.confidence : 0.5;
+  const summary = d.signal_summary || {};
+  const evidence = d.evidence || [];
+  const chains = d.chains || [];
+  const recs = d.recommendations || [];
+  const cid = d.conversation_id || '-';
+  const hash = d.text_hash || '-';
+  const ts = d.timestamp_utc || d.timestamp || '-';
+
+  // Normalize recommendations - handle both string[] and object[]
+  function recText(r) {
+    if (typeof r === 'string') return r;
+    if (r && r.body) return (r.title ? r.title + ': ' : '') + r.body;
+    if (r && r.title) return r.title;
+    return String(r);
+  }
+
+  const verdictIcon = verdict === 'BLOCK' ? '&#9888;' : verdict === 'WARN' ? '&#9888;' : '&#10003;';
+  const abortText = d.abort_recommended ? 'YES' : 'NO';
+
+  let html = '';
+
+  // Verdict banner
+  html += '<div class="verdict-banner ' + verdict + '">';
+  html += '<div>';
+  html += '<div class="verdict-label">' + verdictIcon + '&nbsp; ' + verdict + '</div>';
+  html += '<div style="font-size:12px;color:var(--text-dim);margin-top:6px;font-family:var(--mono)">Abort recommended: ' + abortText + '</div>';
+  html += '</div>';
+  html += '<div class="verdict-meta">';
+  html += '<div class="verdict-score">' + risk.toFixed(2) + '</div>';
+  html += '<div class="verdict-score-label">Risk Score</div>';
+  html += '<div class="verdict-conf">Confidence: ' + Math.round(conf * 100) + '%</div>';
+  html += '</div>';
+  html += '</div>';
+
+  // Metrics row
+  const critCount = summary.critical_count || evidence.filter(e => e.tier === 'CRITICAL').length;
+  const highCount = summary.high_count || evidence.filter(e => e.tier === 'HIGH').length;
+  const medCount  = summary.medium_count || evidence.filter(e => e.tier === 'MEDIUM').length;
+  const chainCount = summary.chain_count || chains.length;
+
+  html += '<div class="metrics-row">';
+  html += metric(summary.total_signals || evidence.length, 'Signals');
+  html += metric(critCount, 'Critical');
+  html += metric(chainCount, 'Patterns');
+  html += metric(Math.round(conf * 100) + '%', 'Confidence');
+  html += '</div>';
+
+  // Chains panel
+  if (chains.length > 0) {
+    html += '<div class="panel">';
+    html += '<div class="panel-header"><span class="panel-title">Detected Patterns</span><span class="panel-count">' + chains.length + '</span></div>';
+    for (const c of chains) {
+      const name = c.display_name || c.chain_id || 'Unknown';
+      const crisk = c.risk_score ? c.risk_score.toFixed(2) : '-';
+      html += '<div class="chain-item">';
+      html += '<div class="chain-icon">&#9888;</div>';
+      html += '<div><div class="chain-name">' + esc(name) + '</div>';
+      html += '<div class="chain-risk">Risk score: ' + crisk + '</div></div>';
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  // Evidence panel
+  if (evidence.length > 0) {
+    html += '<div class="panel">';
+    html += '<div class="panel-header"><span class="panel-title">Signal Evidence</span><span class="panel-count">' + evidence.length + ' signals</span></div>';
+    for (const e of evidence) {
+      const tier = e.tier || 'MEDIUM';
+      const snippet = e.snippet || '';
+      const weight = e.weight ? e.weight.toFixed(2) : '-';
+      html += '<div class="evidence-item">';
+      html += '<span class="tier-badge ' + tier + '">' + tier + '</span>';
+      html += '<div>';
+      html += '<div class="evidence-signal">' + esc(e.signal || '') + '</div>';
+      if (snippet) html += '<div class="evidence-snippet">&ldquo;' + esc(snippet) + '&rdquo;</div>';
+      html += '</div>';
+      html += '<div class="evidence-weight">' + weight + '</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+  } else {
+    html += '<div class="panel"><div class="panel-header"><span class="panel-title">Signal Evidence</span></div>';
+    html += '<div style="padding:16px;font-size:13px;color:var(--text-muted);font-family:var(--mono)">No threat signals detected.</div></div>';
+  }
+
+  // Recommendations panel
+  if (recs.length > 0) {
+    html += '<div class="panel">';
+    html += '<div class="panel-header"><span class="panel-title">Recommendations</span></div>';
+    for (const r of recs) {
+      html += '<div class="rec-item"><span class="rec-bullet">&rsaquo;</span><span>' + esc(recText(r)) + '</span></div>';
+    }
+    html += '</div>';
+  }
+
+  // Audit footer
+  html += '<div class="audit-footer">';
+  html += '<div class="audit-field">CONV_ID<span>' + esc(cid.slice(0, 16)) + '...</span></div>';
+  html += '<div class="audit-field">HASH<span>' + esc(hash) + '</span></div>';
+  html += '<div class="audit-field">TIMESTAMP<span>' + esc(ts.slice(0, 19).replace('T', ' ')) + '</span></div>';
+  html += '<div class="audit-field">ENGINE<span>VIE-v2.1</span></div>';
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
+function metric(val, label) {
+  return '<div class="metric-card"><div class="metric-value">' + val + '</div><div class="metric-label">' + label + '</div></div>';
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function clearAll() {
+  document.getElementById('conversationInput').value = '';
+  const el = document.getElementById('results');
+  el.style.display = 'none';
+  el.innerHTML = '';
+}
+
+// Allow Ctrl+Enter / Cmd+Enter to submit
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runAnalysis();
+});
+</script>
+
 </body>
 </html>
