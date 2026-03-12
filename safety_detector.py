@@ -347,4 +347,4 @@ class SafetyScamDetector:
             "primary_concern": concern_map.get(primary.type, primary.type.value),
             "details": primary.evidence,
             "flag_count": len(flags)
-        }(
+        }
